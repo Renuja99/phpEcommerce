@@ -4,6 +4,7 @@ namespace app\controllers;
 
 use app\models\Product;
 use app\Router;
+use app\controllers\AuthenticateController;
 
 class ProductController
 {
@@ -52,8 +53,16 @@ class ProductController
 
         $data = json_decode((file_get_contents(("php://input"))));
 
+        $authenticateUser = new AuthenticateController();
 
         $errors = [];
+        $user = [
+
+            "user_id" => '',
+            "user_token" => ''
+
+        ];
+
         $productData = [
             'title' => '',
             'description' => '',
@@ -61,33 +70,41 @@ class ProductController
             'image' => ''
         ];
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $user["id"] = $data->user_id;
+        $user['user_token'] = $data->user_token;
 
-            header("Content-Type: application/json; charset=UTF-8");
+        $res = $authenticateUser->validateUser($user, $router);
 
-            $productData['title'] = $data->title;
-            $productData['description'] = $data->description;
-            $productData['price'] = $data->price;
-            $productData['encodedImage'] = $data->image;
+        if ($res == "true") {
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-            $product = new Product();
-            $product->load($productData);
-            $errors = $product->save();
-            if (empty($errors)) {
+                header("Content-Type: application/json; charset=UTF-8");
 
-                echo "product created";
-                // header('Location: /products');
-                exit;
-            } else {
-                var_dump($errors);
+                $productData['title'] = $data->title;
+                $productData['description'] = $data->description;
+                $productData['price'] = $data->price;
+                $productData['encodedImage'] = $data->image;
 
-                exit;
+                $product = new Product();
+                $product->load($productData);
+                $errors = $product->save();
+                if (empty($errors)) {
+
+                    echo "product created";
+                    http_response_code(201);
+                    // header('Location: /products');
+                    exit;
+                } else {
+                    var_dump($errors);
+
+                    exit;
+                }
             }
+        } else {
+            echo "token invalid";
+            http_response_code(401);
+            exit;
         }
-        // $router->renderView('products/create', [
-        //     'product' => $productData,
-        //     'errors' => $errors
-        // ]);
     }
 
     public function update(Router $router)
@@ -164,7 +181,7 @@ class ProductController
             echo 'Product cannot be found';
         } else {
             $product->deleteProduct($id);
-            echo 'Product deletesd';
+            echo 'Product deleted';
         }
 
         // echo $router->renderView('products/update');

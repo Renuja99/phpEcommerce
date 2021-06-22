@@ -6,7 +6,9 @@
             "email": "devmindadeco@gmail.com"
         }
     ],
-    "require": {},
+    "require": {
+        "firebase/php-jwt": "^5.3"
+    },
 
     "autoload": {
         "psr-4": {

@@ -13,8 +13,6 @@ class Category extends Database
     public ?string $cat_name = null;
 
 
-
-
     public function load($data)
     {
         $this->id = $data['cat_id'] ?? null;

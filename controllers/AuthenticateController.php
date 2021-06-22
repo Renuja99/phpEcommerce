@@ -75,4 +75,18 @@ class AuthenticateController
             );
         }
     }
+
+    public function validateUser($userInfo, $router)
+    {
+        $errors = [];
+
+
+        $validateeUser = $router->db->validateUser($userInfo);
+
+        if ($validateeUser) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }

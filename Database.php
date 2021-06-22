@@ -41,9 +41,23 @@ class Database
     }
 
 
-
-
-    public function getCategory($id)
+    public function validateUser($array)
     {
+        $id = $array['id'];
+        $token = $array['user_token'];
+        $statement = $this->pdo->prepare('SELECT * FROM user WHERE user_id=:id AND user_token=:token');
+        $statement->bindValue(':id', "$id");
+        $statement->bindValue(':token', "$token");
+
+        $statement->execute();
+
+        $userInfo  =  $statement->fetch(PDO::FETCH_ASSOC);
+
+        if ($userInfo) {
+            return true;
+        } else {
+
+            return false;
+        }
     }
 }
