@@ -17,6 +17,7 @@ class Product extends Database
 
 
 
+
     public function load($data)
     {
         $this->id = $data['id'] ?? null;
@@ -76,25 +77,84 @@ class Product extends Database
         return $errors;
     }
 
-    public function getProducts()
+    public function getProducts($page, $results_per_page)
     {
-        //$db = Database::$db;
 
-        $statement = $this->pdo->prepare('SELECT * FROM products_table ORDER BY create_date DESC');
+
+
+        $offset = ($page - 1) * $results_per_page;
+
+
+
+        //GET TOTAL NUMBER OF PAGES
+
+        $count_statement = $this->pdo->prepare('SELECT COUNT(id) FROM products_table');
+        $count_statement->execute();
+        $array_count = $count_statement->fetchAll(PDO::FETCH_ASSOC);
+
+
+
+        foreach ($array_count as $key => $value) {
+
+            $total_number_of_rows =  $value["COUNT(id)"];
+        }
+
+
+
+
+        //determine the total number of pages available  
+        $number_of_pages = ceil($total_number_of_rows / $results_per_page);
+
+
+        //Retrieve data and send JSON responses the results;
+
+
+        $sql_query = "SELECT * FROM products_table LIMIT :offset,:results_per_page ";
+
+        $statement = $this->pdo->prepare($sql_query);
+        $statement->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        $statement->bindValue(':results_per_page', (int)$results_per_page, PDO::PARAM_INT);
         $statement->execute();
-        $result = $statement->fetchAll(PDO::FETCH_ASSOC);
+        $results = $statement->fetchAll(PDO::FETCH_ASSOC);
 
-        return $result;
+        $productsResult = [];
+        $result['additionalinfo'] = array();
+
+        //$result[] = $number_of_pages;
+        //display the retrieved result on the webpage  
+        foreach ($results as $key => $value) {
+            $productsResult[] = $value;
+        }
+
+        $item_array = array(
+            'numberofpages' => $number_of_pages,
+            'numberofrecords' => $total_number_of_rows
+        );
+        array_push($result['additionalinfo'], $item_array);
+
+
+        $returnedArrays = [];
+        array_push($returnedArrays, $result['additionalinfo'], $productsResult);
+
+
+        // echo '<pre>';
+        // var_dump($productsResult);
+        // exit();
+        // $statement = $this->pdo->prepare('SELECT * FROM products_table ORDER BY create_date DESC');
+        // $statement->execute();
+        // $result = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+        return $returnedArrays;
     }
 
 
-    public function getProductById($id)
-    {
-        $statement = $this->pdo->prepare('SELECT * FROM products_table WHERE id=:id');
-        $statement->bindValue(':id', $id);
-        $statement->execute();
-        return $statement->fetch(PDO::FETCH_ASSOC);
-    }
+    // public function getProductById($id)
+    // {
+    //     $statement = $this->pdo->prepare('SELECT * FROM products_table WHERE id=:id');
+    //     $statement->bindValue(':id', $id);
+    //     $statement->execute();
+    //     return $statement->fetch(PDO::FETCH_ASSOC);
+    // }
 
 
     public function updateProduct(Product $product)
@@ -126,7 +186,6 @@ class Product extends Database
     {
 
         $statement = $this->pdo->prepare("UPDATE products_table SET view_product=0 WHERE id=:id");
-
         $statement->bindValue(':id', $id);
         $statement->execute();
     }

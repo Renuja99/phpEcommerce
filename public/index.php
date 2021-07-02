@@ -9,6 +9,9 @@ use app\controllers\CategoryController;
 use app\controllers\OrderController;
 
 
+header('Content-Type: application/json');
+
+
 $router = new Router();
 
 //AUTHENTICATION ROUTES
@@ -34,7 +37,7 @@ $router->post('/api/categories/delete', [CategoryController::class, 'delete']);
 //ORDER_ROUTES
 $router->get('/api/orders', [OrderController::class, 'index']);
 $router->post('/api/orders/create', [OrderController::class, 'create']);
-$router->post('/api/categories/update', [OrderController::class, 'update']);
+$router->post('/api/orders/update', [OrderController::class, 'update']);
 $router->post('/api/categories/delete', [OrderController::class, 'delete']);
 
 //CANCELED_ORDER_ROUTES

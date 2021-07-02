@@ -4,36 +4,47 @@ namespace app\controllers;
 
 use app\models\Category;
 use app\Router;
+use app\controllers\AuthenticateController;
 
 class CategoryController
 {
 
     public function index(Router $router)
     {
-        // $search = $_GET['search'] ?? '';
 
-        $category = new Category();
+        $data = json_decode((file_get_contents(("php://input"))));
 
-        $getCategory =  $category->getCategories();
+        $authenticateUser = new AuthenticateController();
 
-        foreach ($getCategory as $category) {
-            if ($category['status'] == 1) {
-                echo json_encode($category) . '<br>';
+        $user = [
 
-                echo '<p>';
-            }
+            "user_id" => '',
+            "user_token" => ''
+
+        ];
+
+        $user["id"] = $data->user_id;
+        $user['user_token'] = $data->user_token;
+
+        $res = $authenticateUser->validateUser($user, $router);
+
+        if ($res == "true") {
+            $category = new Category();
+
+            $getCategory =  $category->getCategories();
+
+
+            echo json_encode($getCategory);
+        } else {
+
+            echo "token invalid";
+            http_response_code(401);
         }
 
-        // echo '<pre>';
-        // var_dump($products);
-        // echo '</pre>';
-
-        //echo json_encode($products);
 
 
 
 
-        exit;
         // echo '<pre>';
         // var_dump($router->getRoutes);
         // echo '</pre>';
@@ -44,33 +55,53 @@ class CategoryController
 
         $data = json_decode((file_get_contents(("php://input"))));
 
+        $authenticateUser = new AuthenticateController();
 
-        $errors = [];
-        $CategoryData = [
-            'cat_name' => ''
+        $user = [
+
+            "user_id" => '',
+            "user_token" => ''
+
         ];
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $user["id"] = $data->user_id;
+        $user['user_token'] = $data->user_token;
 
-            header("Content-Type: application/json; charset=UTF-8");
+        $res = $authenticateUser->validateUser($user, $router);
 
-            $CategoryData['cat_name'] = $data->cat_name;
+        if ($res == "true") {
+
+            $errors = [];
+            $CategoryData = [
+                'cat_name' => ''
+            ];
+
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
-            $category = new Category();
-            $category->load($CategoryData);
-            $errors = $category->save();
-            if (empty($errors)) {
+                $CategoryData['cat_name'] = $data->cat_name;
 
-                echo "category created";
-                // header('Location: /products');
-                exit;
-            } else {
-                var_dump($errors);
 
-                exit;
+                $category = new Category();
+                $category->load($CategoryData);
+                $errors = $category->save();
+                if (empty($errors)) {
+
+                    echo "category created";
+                    // header('Location: /products');
+                    exit;
+                } else {
+                    var_dump($errors);
+
+                    exit;
+                }
             }
+        } else {
+            echo "token invalid";
+            http_response_code(401);
         }
+
+
         // $router->renderView('products/create', [
         //     'product' => $productData,
         //     'errors' => $errors

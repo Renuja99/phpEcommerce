@@ -11,41 +11,27 @@ class ProductController
 
     public function index(Router $router)
     {
-        // $search = $_GET['search'] ?? '';
+
+        if (!isset($_GET['page'])) {
+
+            $page = 1;
+        } else {
+            $page = $_GET['page'];
+        }
+
+        $results_per_page = $_GET['results_per_page'];
+
+
 
         $products = new Product();
 
-        $getProducts =  $products->getProducts();
-
-        // $products = $router->db->getProducts();
-
-        // $router->renderView(
-        //     'products/index',
-        //     [
-        //         'products' => $products
-        //     ]
-        // );
-        foreach ($getProducts as $product) {
-            if ($product['view_product'] == 1) {
-                echo json_encode($product) . '<br>';
-
-                echo '<p>';
-            }
-        }
-
-        // echo '<pre>';
-        // var_dump($products);
-        // echo '</pre>';
-
-        //echo json_encode($products);
+        $getProducts =  $products->getProducts($page, $results_per_page);
 
 
+        // print_r($getProducts);
 
-
-        exit;
-        // echo '<pre>';
-        // var_dump($router->getRoutes);
-        // echo '</pre>';
+        echo json_encode($getProducts, true);
+        http_response_code(200);
     }
 
     public function create(Router $router)
@@ -115,6 +101,19 @@ class ProductController
 
         $data = json_decode((file_get_contents(("php://input"))));
 
+        $authenticateUser = new AuthenticateController();
+
+        $user = [
+
+            "user_id" => '',
+            "user_token" => ''
+
+        ];
+
+        $user["id"] = $data->user_id;
+        $user['user_token'] = $data->user_token;
+
+        $res = $authenticateUser->validateUser($user, $router);
 
         $errors = [];
         if ($method === 'GET') {
@@ -137,33 +136,41 @@ class ProductController
             );
         } else {
 
-            $productData = [
-                'id' => '',
-                'title' => '',
-                'description' => '',
-                'price' => '',
-            ];
+
+            if ($res == "true") {
+                $productData = [
+                    'id' => '',
+                    'title' => '',
+                    'description' => '',
+                    'price' => '',
+                ];
 
 
 
-            $productData['id'] = $data->id;
-            $productData['title'] = $data->title;
-            $productData['description'] = $data->description;
-            $productData['price'] = $data->price;
+                $productData['id'] = $data->id;
+                $productData['title'] = $data->title;
+                $productData['description'] = $data->description;
+                $productData['price'] = $data->price;
 
-            //get image path from database
-            //$productInfo = $router->db->getProductById($productData['id']);
+                //get image path from database
+                //$productInfo = $router->db->getProductById($productData['id']);
 
 
-            $product = new Product();
-            $product->load($productData);
-            $errors = $product->save();
-            if (empty($errors)) {
-                // header('Location: /products');
-                echo "product updated";
-                exit;
+                $product = new Product();
+                $product->load($productData);
+                $errors = $product->save();
+                if (empty($errors)) {
+                    // header('Location: /products');
+                    echo "product updated";
+                    exit;
+                } else {
+                    var_dump($errors);
+                }
             } else {
-                var_dump($errors);
+
+                echo "token invalid";
+                http_response_code(401);
+                exit;
             }
         }
     }
@@ -173,16 +180,39 @@ class ProductController
         $data = json_decode((file_get_contents(("php://input"))));
         $id = $data->id ?? null;
 
-        $product = new Product();
-        $productReturned = $product->getProductById($id);
+        $authenticateUser = new AuthenticateController();
 
-        $id = $productReturned['id'];
-        if (!$id) {
-            echo 'Product cannot be found';
+        $user = [
+
+            "user_id" => '',
+            "user_token" => ''
+
+        ];
+
+        $user["id"] = $data->user_id;
+        $user['user_token'] = $data->user_token;
+
+        $res = $authenticateUser->validateUser($user, $router);
+
+        if ($res == "true") {
+            $product = new Product();
+            $productReturned = $product->getProductById($id);
+
+            $id = $productReturned['id'];
+            if (!$id) {
+                echo 'Product cannot be found';
+            } else {
+                $product->deleteProduct($id);
+                echo 'Product deleted';
+            }
         } else {
-            $product->deleteProduct($id);
-            echo 'Product deleted';
+
+            echo "token invalid";
+            http_response_code(401);
+            exit;
         }
+
+
 
         // echo $router->renderView('products/update');
     }

@@ -9,38 +9,48 @@ use app\Database;
 
 class Order extends Database
 {
-    public ?int $order_id = null;
-    public ?string $user_id = null;
-    public ?string $product_ids = null;
+    public ?int $order_id        = null;
+    public ?int $customer_id     = null;
+    public ?string $payment_type    = null;
+    public ?string $payment_status = null;
+    public ?bool $deleted        = null;
 
 
     public function load($data)
     {
-        $this->order_id = $data['order_id'];
-        $this->user_id = $data['user_id'];
-        $this->product_ids = $data['product_ids'];
+        $this->order_id          = $data['order_id'];
+        $this->customer_id       = $data['customer_id'];
+        $this->payment_type      = $data['payment_type'];
+        $this->payment_status    = $data['payment_status'];
+        $this->deleted           = $data['deleted'];
+
+        // var_dump($this);
+        // exit;
     }
 
     public function save()
     {
-        $errors = [];
-        if (!$this->product_ids) {
-            $errors[] = 'Products should be selected to place an order';
-        }
 
+        // $db = Database::$db;
+        if ($this->order_id) {
 
-        if (empty($errors)) {
+            $this->updateOrder($this);
+        } else {
 
+            $errors = [];
+            if (!$this->customer_id) {
+                $errors[] = 'There has to exist a customer';
+            }
 
-            // $db = Database::$db;
-            if ($this->id) {
+            if (!$this->payment_type) {
+                $errors[] = 'Payment type should be mentioned';
+            }
 
-                // $this->updateOrder($this);
-            } else {
+            if (empty($errors)) {
                 $this->createOrder($this);
             }
+            return $errors;
         }
-        return $errors;
     }
 
     public function getOrders()
@@ -65,23 +75,26 @@ class Order extends Database
 
     public function createOrder(Order $order)
     {
-        $statement = $this->pdo->prepare("INSERT INTO orders(user_id, product_ids, date_purchased, status ) VALUES( :user_id, :product_ids, :date_purchased, 1)");
-        $statement->bindValue(':user_id', $this->user_id);
-        $statement->bindValue(':product_ids', $this->product_ids);
-        $statement->bindValue(':date_purchased', date('Y-m-d H:i:s'));
+
+        $statement = $this->pdo->prepare("INSERT INTO orders( customer_id, payment_type, payment_status, order_date, deleted ) VALUES( :customer_id , :payment_type , :payment_status, :order_date, 0)");
+        $statement->bindValue(':customer_id', $order->customer_id);
+        $statement->bindValue(':payment_type', $order->payment_type);
+        $statement->bindValue(':payment_status', $order->payment_status);
+        $statement->bindValue(':order_date', date('Y-m-d H:i:s'));
         $statement->execute();
     }
 
 
-    // public function updateOrder(Order $order)
-    // {
+    public function updateOrder(Order $order)
+    {
 
-    //     $statement = $this->pdo->prepare("UPDATE orders SET cat_name=:cat_name WHERE cat_id=:cat_id");
+        $statement = $this->pdo->prepare("UPDATE orders SET payment_status=:payment_status, payment_type=:payment_type  WHERE order_id=:order_id ");
 
-    //     $statement->bindValue(':cat_name', $category->cat_name);
-    //     $statement->bindValue(':cat_id', $category->id);
-    //     $statement->execute();
-    // }
+        $statement->bindValue(':payment_type', $order->payment_type);
+        $statement->bindValue(':payment_status', $order->payment_status);
+        $statement->bindValue(':order_id', $order->order_id);
+        $statement->execute();
+    }
 
 
     // public function deleteCategory($id)
